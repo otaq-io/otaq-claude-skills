@@ -1,27 +1,27 @@
 ---
 name: tech-spec
 description: >-
-  Work out how to build a feature whose product decisions are settled in tug/decisions/: read them and the code,
+  Work out how to build a feature whose product decisions are settled in tuq/decisions/: read them and the code,
   draft the architecture (where it goes, the parts it adds or changes and how they depend on each other, data and
   APIs, alternatives considered) with a very small plain-text diagram, discuss any part the user questions until
-  it is settled, and save tug/tech-specs/<feature>.md. Runs as the Tech spec stage of an Otaq ticket, or when the
-  user types /tug:tech-spec. Technical questions only, never the product.
+  it is settled, and save tuq/tech-specs/<feature>.md. Runs as the Tech spec stage of an Otaq ticket, or when the
+  user types /tuq:tech-spec. Technical questions only, never the product.
 argument-hint: "[feature]"
 disable-model-invocation: true
 adapted-from: "Otaq 0.1.0, built-in skill `tech-spec` (plugin/skills/tech-spec/SKILL.md)"
 ---
 
-# Work out how to build it: tug:tech-spec
+# Work out how to build it: tuq:tech-spec
 
 Adapted from Otaq 0.1.0's built-in `tech-spec` skill: its stage contract and "Shaping the design" are kept; its
-asking rule is replaced by draft, then discuss (step 5) and its docs step by `tug/tech-specs/` (steps 4 and 6); it
+asking rule is replaced by draft, then discuss (step 5) and its docs step by `tuq/tech-specs/` (steps 4 and 6); it
 also runs in a plain Claude Code chat ("In a plain chat"). When Otaq's `tech-spec` skill changes, merge the change
 here by hand.
 
-**Run `tug rules` and read all of it before you read or write `tug/`.** It holds the folder's layout and the
-shape of the decisions you build on; this skill doesn't repeat them. Start the tech spec from `tug template
-tech-spec`. `tug` is a command the tug plugin puts on the Bash tool's PATH; this skill names no file paths, so it
-works the same when Otaq copies only this `SKILL.md` into a ticket's worktree. `tug: command not found` means the
+**Run `tuq rules` and read all of it before you read or write `tuq/`.** It holds the folder's layout and the
+shape of the decisions you build on; this skill doesn't repeat them. Start the tech spec from `tuq template
+tech-spec`. `tuq` is a command the tuq plugin puts on the Bash tool's PATH; this skill names no file paths, so it
+works the same when Otaq copies only this `SKILL.md` into a ticket's worktree. `tuq: command not found` means the
 plugin isn't enabled in this session: stop and say so.
 
 ## Which mode
@@ -40,8 +40,8 @@ if [ -n "$OTAQ_TICKET" ]; then otaq prime; fi   # then read "## Your stage"
 
 You run the **Tech spec** stage of an Otaq ticket (its key is in `$OTAQ_TICKET`, for example `SHOP-40`). Product
 spec has settled **what** to build with the user and committed it on the ticket's branch, as numbered decisions in
-`tug/decisions/`. Your job is to work out **how** to build it, and write that down as the feature's **tech spec**,
-`tug/tech-specs/<feature>.md`, committed on the same branch. After you, Milestone plan turns both specs into the
+`tuq/decisions/`. Your job is to work out **how** to build it, and write that down as the feature's **tech spec**,
+`tuq/tech-specs/<feature>.md`, committed on the same branch. After you, Milestone plan turns both specs into the
 ticket's Plan, and the user checks all three at Spec review.
 
 The committed docs carry the reasons to the next stages, not only your comment: write each decision so someone who
@@ -66,20 +66,20 @@ types a reminder into this session.
    below. They add to these steps; they never remove getting the context (step 1) or ending your stage (step 7).
 3. **Read what Product spec committed.** `prime`'s first line names the branch it merges into (for example `main`):
    `git log --oneline main..HEAD` lists the commits, `git diff main...HEAD` shows them. Read every decision and
-   doc it wrote in full: they are what you build on. Read `tug/README.md`'s index too, and the earlier decisions
+   doc it wrote in full: they are what you build on. Read `tuq/README.md`'s index too, and the earlier decisions
    that touch the same feature.
-4. **Find the tech spec file.** It is always `tug/tech-specs/<feature>.md` at the repository root; don't ask the
+4. **Find the tech spec file.** It is always `tuq/tech-specs/<feature>.md` at the repository root; don't ask the
    user where it goes.
    - **Same file on rework.** First look for a tech spec of this ticket:
-     `grep -l "^- \*\*Ticket:\*\* $OTAQ_TICKET\$" tug/tech-specs/*.md`. Found: use that file and its `<feature>`,
+     `grep -l "^- \*\*Ticket:\*\* $OTAQ_TICKET\$" tuq/tech-specs/*.md`. Found: use that file and its `<feature>`,
      and update it.
    - **Otherwise** `<feature>` is 2–5 kebab-case words from the ticket title (`reading-list-sharing`). When
-     `tug/plans/<feature>.md` already exists for this ticket, use its name, so the feature's tech spec, plan and
+     `tuq/plans/<feature>.md` already exists for this ticket, use its name, so the feature's tech spec, plan and
      prompt match by name.
    - **Where the docs live.** When the ticket's description has no "Tech spec" line under "Where the docs live", add
-     `- Tech spec: tug/tech-specs/<feature>.md` with `otaq update SHOP-40 --stdin` (the whole description, with
+     `- Tech spec: tuq/tech-specs/<feature>.md` with `otaq update SHOP-40 --stdin` (the whole description, with
      the line added), so Milestone plan finds it there.
-   - **No `tug/` yet:** run `tug init` and add the pointers `tug rules` describes.
+   - **No `tuq/` yet:** run `tuq init` and add the pointers `tuq rules` describes.
    - **No decisions about the feature** (Product spec wrote its docs elsewhere): read the files Product spec's
      comment names, name them in "How it is built", and write `Decisions: none` in the header.
 5. **Work out how to build it: draft first, then discuss.** Read the code the work touches and decide: where the new
@@ -100,10 +100,10 @@ types a reminder into this session.
      again for that point and keeps the loser under "Considered".
    - **Settled** when the user says "settled", "enough", "go" or the like: go straight on to step 6. The file is kept
      current after each answer, so an interrupted session loses nothing.
-   - **Technical only.** Never ask about the product: it is settled in `tug/decisions/`. A point that turns out to
+   - **Technical only.** Never ask about the product: it is settled in `tuq/decisions/`. A point that turns out to
      be an open product question is not decided here: say so in your next question, write it under "Open product
      points" in the file, and design around it only where the design doesn't depend on the answer.
-6. **Write the tech spec** in `tug/tech-specs/<feature>.md`, then **commit everything** on the ticket's branch
+6. **Write the tech spec** in `tuq/tech-specs/<feature>.md`, then **commit everything** on the ticket's branch
    with the commit skill `prime` names (`otaq-commit`, or your agent's own commit skill); when it names none, commit
    with `git add -A` and `git commit -m "SHOP-40: …"`. Commit once, at the end. You may edit any file the spec needs
    (a schema sketch, a config sample), but don't build the feature: Dev does that. Nothing may stay uncommitted:
@@ -115,7 +115,7 @@ types a reminder into this session.
 
    ```sh
    otaq stage next --stdin --report-file "$OTAQ_RESOURCE_DIR/options.md" <<'COMMENT'
-   Tech spec: tug/tech-specs/reading-list-sharing.md (decisions 008-010); a random token per list in the lists
+   Tech spec: tuq/tech-specs/reading-list-sharing.md (decisions 008-010); a random token per list in the lists
    table, no new service. Attached: the approaches I weighed. Query plan: `$OTAQ_RESOURCE_DIR/query-plan.txt`
    COMMENT
    ```
@@ -129,7 +129,7 @@ types a reminder into this session.
 
 ## The tech spec file
 
-Start from `tug template tech-spec` and fill it in. Rough on purpose: the explanation fits on
+Start from `tuq template tech-spec` and fill it in. Rough on purpose: the explanation fits on
 one screen and the whole file a few screens. It is the spec, not the plan: no step-by-step coding plan, no code.
 
 - **Header exactly three lines:** `Ticket` (the ticket key; left out in a plain chat), `Date` (the day of the latest
@@ -156,12 +156,12 @@ With no `$OTAQ_TICKET`, there is no ticket, no stage and nothing to hold a quest
 these changes, and skip everything that names `otaq`:
 
 - **Context instead of steps 1-3:** the feature (the skill's argument, or what the user just said), `CLAUDE.md` and
-  the project's notes, `tug/README.md` and the decisions about this feature, and the code the feature touches
+  the project's notes, `tuq/README.md` and the decisions about this feature, and the code the feature touches
   (read it, don't change it). The repository root is `git rev-parse --show-toplevel`; outside a git repository use
   the current directory and say so.
 - **The feature name** is the skill's argument in kebab case, or 2–5 words from the topic; reuse an existing
-  `tug/tech-specs/<feature>.md` or `tug/plans/<feature>.md` of the same feature. No "Where the docs live" step.
-- **No decisions about the feature:** ask once whether to run `/tug:product-spec` first (recommended) or go on from
+  `tuq/tech-specs/<feature>.md` or `tuq/plans/<feature>.md` of the same feature. No "Where the docs live" step.
+- **No decisions about the feature:** ask once whether to run `/tuq:product-spec` first (recommended) or go on from
   the description, with `Decisions: none`.
 - **The header has no `Ticket` line.**
 - **Show and ask:** the draft (explanation, diagram, numbered points and the file's path) goes in your reply, then
@@ -169,10 +169,10 @@ these changes, and skip everything that names `otaq`:
   and `Change something`; the user types the details under "Other". Discuss one point per turn, as step 5 says.
   Any other question is mapped from "Asking": each `--option` an option `label` (at most 40 characters), its
   `--note` the option's `description`, the recommended option first with " (Recommended)" at the end of its label.
-- **An open product point:** write it under "Open product points" and suggest `/tug:product-spec`; decide nothing
+- **An open product point:** write it under "Open product points" and suggest `/tuq:product-spec`; decide nothing
   about it.
 - **Never commit, stage or push**: the user commits when they choose.
-- **End** by naming the file you wrote and the main choices in a few lines, and suggest `/tug:milestone-plan <feature>`
+- **End** by naming the file you wrote and the main choices in a few lines, and suggest `/tuq:milestone-plan <feature>`
   next.
 
 ## Shaping the design
@@ -219,7 +219,7 @@ Run `otaq prime`, read the new comments (the user's at Spec review and Product s
 on the branch since your last commit (`git log --oneline` and `git diff <your last commit>..HEAD`). Change only what
 the change touches, **in the same tech spec file** (step 4), update its `Date`, and its `Decisions` when Product spec
 added or superseded decisions, commit everything, and run `otaq stage next --stdin` again with a comment saying what
-changed ("Tech spec: tug/tech-specs/reading-list-sharing.md §1 now uses a shares table, as you asked; nothing else
+changed ("Tech spec: tuq/tech-specs/reading-list-sharing.md §1 now uses a shares table, as you asked; nothing else
 changed"). Run the discussion of step 5 again only when the comment leaves a technical choice open: the user already
 reviewed the draft at Spec review.
 When Spec review sends the card back to you directly ("Spec review sent SHOP-40 back to you with a comment. Run
@@ -241,7 +241,7 @@ version; the file holds the rest:
 
 ````sh
 otaq ask human --stdin <<'QUESTION'
-Tech spec draft: tug/tech-specs/reading-list-sharing.md (in /path/to/worktree)
+Tech spec draft: tuq/tech-specs/reading-list-sharing.md (in /path/to/worktree)
 
 A random share token on each list. ListsService gets share() and openShared(); a new read-only SharedListPage opens
 a list by its token. No new service.

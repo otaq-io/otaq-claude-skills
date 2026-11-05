@@ -1,7 +1,7 @@
-# tug
+# tuq
 
-Product decisions (and, later, tech specs, milestone plans and orchestrator prompts) produced by the tug skills
-(`tug:product-spec`, `tug:step-back`, `tug:tech-spec`, `tug:milestone-plan`).
+Product decisions (and, later, tech specs, milestone plans and orchestrator prompts) produced by the tuq skills
+(`tuq:product-spec`, `tuq:step-back`, `tuq:tech-spec`, `tuq:milestone-plan`).
 
 ## Layout
 
@@ -18,14 +18,14 @@ Product decisions (and, later, tech specs, milestone plans and orchestrator prom
   renumbering the later branch's files and their references. Numbers are never reused.
 - Before a decision is saved it is checked against the existing ones; when the user proceeds despite a conflict, the
   earlier one is marked `Superseded by NNN` (or `Partly superseded by NNN`), not rewritten.
-- The index below is generated from the decision files (`tug index`): don't edit it by hand.
+- The index below is generated from the decision files (`tuq index`): don't edit it by hand.
 
 ## Decision index
 
-<!-- tug:index:start -->
+<!-- tuq:index:start -->
 
 | #   | Decision | Status | Summary |
 | --- | -------- | ------ | ------- |
 | | _No decisions yet._ | | |
 
-<!-- tug:index:end -->
+<!-- tuq:index:end -->

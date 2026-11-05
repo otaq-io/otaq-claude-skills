@@ -3,14 +3,14 @@
 - **Ticket:** <KEY, or "none" in a plain chat>
 - **Date:** YYYY-MM-DD
 - **Decisions:** NNN, NNN
-- **Tech spec:** tug/tech-specs/<feature>.md
-- **Orchestrator prompt:** tug/prompts/<feature>-orchestrator.md
+- **Tech spec:** tuq/tech-specs/<feature>.md
+- **Orchestrator prompt:** tuq/prompts/<feature>-orchestrator.md
 
-<!-- tug:plan:start -->
+<!-- tuq:plan:start -->
 
 <Why this split, in a few lines: <feature> is built in N pieces, one behaviour each; what comes first
 and why, what runs side by side. Name the decisions it follows. The agent in charge follows
-tug/prompts/<feature>-orchestrator.md.>
+tuq/prompts/<feature>-orchestrator.md.>
 
 ## Pieces
 
@@ -22,4 +22,4 @@ tug/prompts/<feature>-orchestrator.md.>
    <Details.>
    Check: <how to see it working>
 
-<!-- tug:plan:end -->
+<!-- tuq:plan:end -->

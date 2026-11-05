@@ -3,7 +3,7 @@ name: product-spec
 description: >-
   Settle what a new feature or a change to what the product does should be, before any code: ask the user one
   product question at a time (never about the implementation) until every function and edge case is decided, and
-  save each agreed point as a numbered decision in tug/decisions/ after checking it against the earlier ones.
+  save each agreed point as a numbered decision in tuq/decisions/ after checking it against the earlier ones.
   Use when the user starts describing or exploring a feature ("I want users to...", "what if we added...", "let's
   spec this"), and as the Product spec stage of an Otaq ticket. Not for bug fixes, questions about existing code,
   refactors, reviews or other technical work.
@@ -11,18 +11,18 @@ argument-hint: "[feature or topic]"
 adapted-from: "Otaq 0.1.0, built-in skill `product-spec` (plugin/skills/product-spec/SKILL.md)"
 ---
 
-# Settle what to build: tug:product-spec
+# Settle what to build: tuq:product-spec
 
 Adapted from Otaq 0.1.0's built-in `product-spec` skill: its stage contract is kept (steps 1-8, "When the ticket
-comes back", "Long output", "Asking" and "Rules" below); its decision format is replaced by tug's rules
-(`tug rules`), and it also runs in a plain Claude Code chat ("In a plain chat"). When
+comes back", "Long output", "Asking" and "Rules" below); its decision format is replaced by tuq's rules
+(`tuq rules`), and it also runs in a plain Claude Code chat ("In a plain chat"). When
 Otaq's `product-spec` skill changes, merge the change here by hand.
 
-**Run `tug rules` and read all of it before you read or write `tug/`.** It holds the folder's layout,
+**Run `tuq rules` and read all of it before you read or write `tuq/`.** It holds the folder's layout,
 numbering, the decision file's shape, statuses, the conflict check and renumbering; this skill doesn't repeat them.
-`tug` is a command the tug plugin puts on the Bash tool's PATH (`rules`, `template`, `init`, `next`, `index`,
+`tuq` is a command the tuq plugin puts on the Bash tool's PATH (`rules`, `template`, `init`, `next`, `index`,
 `clashes`); this skill names no file paths, so it works the same when Otaq copies only this `SKILL.md` into a
-ticket's worktree. `tug: command not found` means the plugin isn't enabled in this session: stop and say so.
+ticket's worktree. `tuq: command not found` means the plugin isn't enabled in this session: stop and say so.
 
 ## Which mode
 
@@ -66,11 +66,11 @@ types a reminder into this session.
 2. **Follow the Agent instructions** that `prime` prints. They are the user's own rules and they apply to every step
    below. They add to these steps; they never remove getting the context (step 1), asking one question at a time
    (step 5) or ending your stage (step 8).
-3. **Find where the product decisions and docs live.** Product decisions always live in `tug/decisions/` at the
-   repository root, indexed in `tug/README.md`, by `tug rules`; read `tug/README.md` and the
+3. **Find where the product decisions and docs live.** Product decisions always live in `tuq/decisions/` at the
+   repository root, indexed in `tuq/README.md`, by `tuq rules`; read `tuq/README.md` and the
    decisions about this feature. The project's notes may name other product docs (an overview such as DESIGN.md):
    keep those in step too. When the ticket's description has no "Where the docs live" line for product decisions,
-   add `- Product decisions: tug/decisions/ (index tug/README.md)` to it (see "Recording where the docs
+   add `- Product decisions: tuq/decisions/ (index tuq/README.md)` to it (see "Recording where the docs
    live"), so Tech spec and Milestone plan find it there. Don't ask the user where decisions go.
 4. **Find the open points.** Read the description, the existing decisions and docs, and the code it touches, then list
    for yourself what is undecided about the product: what is asked, **for whom** (which users or roles) and **why**
@@ -86,14 +86,14 @@ types a reminder into this session.
    Say where you are: "Question 2 of about 4". Once nothing that changes what gets built is open, or the user says
    "enough" or "go", go straight on to step 6. **No open points at all?** Then ask nothing and go straight on to step
    6: there is nothing to wait for. **The user says it is getting more complicated than it should be, or isn't sure
-   about the set of decisions?** Offer a step back ("Want me to take a step back with `tug:step-back` and look at the
-   feature without its decisions?") and run `tug:step-back` only after a yes.
-6. **Write the product decisions and docs**, one point at a time, as soon as each is agreed, by `tug rules`:
-   - **Conflict check first** (`tug rules`, "The conflict check"). On a conflict, don't save: the conflict question
+   about the set of decisions?** Offer a step back ("Want me to take a step back with `tuq:step-back` and look at the
+   feature without its decisions?") and run `tuq:step-back` only after a yes.
+6. **Write the product decisions and docs**, one point at a time, as soon as each is agreed, by `tuq rules`:
+   - **Conflict check first** (`tuq rules`, "The conflict check"). On a conflict, don't save: the conflict question
      is your next question (step 5), and you wait for the answer.
-   - Then `tug next`, write `tug/decisions/NNN-<slug>.md` from `tug template decision` (`Ticket:` is `$OTAQ_TICKET`),
-     mark a superseded decision's Status line only, and run `tug index`. In a repo with no `tug/` yet, run
-     `tug init` first and add the pointers `tug rules` describes.
+   - Then `tuq next`, write `tuq/decisions/NNN-<slug>.md` from `tuq template decision` (`Ticket:` is `$OTAQ_TICKET`),
+     mark a superseded decision's Status line only, and run `tuq index`. In a repo with no `tuq/` yet, run
+     `tuq init` first and add the pointers `tuq rules` describes.
    - A point you saved earlier in this session and haven't committed is edited in place when the user changes it;
      anything committed changes only through a new, superseding decision.
    - Update the overview docs the project's notes name to match. You may edit any file the spec needs (an overview,
@@ -108,7 +108,7 @@ types a reminder into this session.
    ```sh
    otaq stage next --stdin --report-file "$OTAQ_RESOURCE_DIR/market-comparison.md" \
      --manual-check "Open a shared wishlist link in a private window" <<'COMMENT'
-   Product spec: tug/decisions/008 (the share link), 009 (who can open it), DESIGN.md; 004 superseded by 008;
+   Product spec: tuq/decisions/008 (the share link), 009 (who can open it), DESIGN.md; 004 superseded by 008;
    agreed: per-account storage, no email in the shared view.
    Attached: how three shops share wishlists.
    COMMENT
@@ -134,14 +134,14 @@ With no `$OTAQ_TICKET`, there is no ticket, no stage and nothing to hold a quest
 these changes, and skip everything that names `otaq`:
 
 - **Context instead of step 1-2:** the user's request (the skill's argument, or what they just said), `CLAUDE.md`
-  and the project's notes, `tug/README.md` and the decisions about this feature, and the code the feature touches
+  and the project's notes, `tuq/README.md` and the decisions about this feature, and the code the feature touches
   (read it, don't change it). The repository root is `git rev-parse --show-toplevel`; outside a git repository use
   the current directory and say so.
 - **Ask with the AskUserQuestion tool**, one question per call, then wait for the answer, mapped from "Asking":
   each `--option` is an option `label` (at most 40 characters), its `--note` the option's `description`, the
   recommended option first with " (Recommended)" at the end of its label; the context and "Question 2 of about 4" go
   in the question text. An **open question** is plain text in your reply; then end your turn.
-- **Write the decision files and run `tug index`**, as step 6 says, with no `Ticket:` line. **Never commit,
+- **Write the decision files and run `tuq index`**, as step 6 says, with no `Ticket:` line. **Never commit,
   stage or push**: the user commits when they choose.
 - **End** by listing every file you created or changed (decision numbers, the README, superseded files) and the
   points agreed, in a few lines.
@@ -156,7 +156,7 @@ resumes with one plain sentence:
 Run `otaq prime` and read the user's comment under "Comments": it is the latest one, and it is all the feedback.
 Fix what it asks: ask the user again one question at a time where the comment leaves something open, change the
 decisions and docs, commit everything, and run `otaq stage next --stdin` again with a comment saying what changed
-("Product spec: tug/decisions/008 now keeps shared links for 30 days, as you asked"). The card then walks Tech spec and
+("Product spec: tuq/decisions/008 now keeps shared links for 30 days, as you asked"). The card then walks Tech spec and
 Milestone plan again, so they pick up your change.
 
 ## Recording where the docs live
@@ -168,7 +168,7 @@ otaq update SHOP-40 --stdin <<'BODY'
 Let customers share their wishlist with a link.
 
 ## Where the docs live
-- Product decisions: tug/decisions/ (index tug/README.md)
+- Product decisions: tuq/decisions/ (index tuq/README.md)
 BODY
 ```
 
@@ -215,7 +215,7 @@ QUESTION
 ## Rules
 
 - Settle the product, not the code: don't plan the code or start building, and never ask about the implementation.
-- Product decisions go in `tug/` by `tug rules`; read them before you touch the folder.
+- Product decisions go in `tuq/` by `tuq rules`; read them before you touch the folder.
 - Ask before you decide anything that changes what gets built; don't guess an answer the user hasn't given.
 - **Never push, never open a PR, never merge.** Commit on the ticket's branch only.
 - **Long text always goes through stdin** (`--stdin`), never quoted arguments. Long command output never does: it

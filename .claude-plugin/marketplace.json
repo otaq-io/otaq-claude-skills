@@ -4,9 +4,9 @@
   "metadata": { "description": "Claude Code skills for Otaq-style work: product spec, tech spec, milestone plan, and browser validation." },
   "plugins": [
     {
-      "name": "tug",
-      "source": "./plugins/tug",
-      "description": "Product decisions, tech specs and milestone plans in tug/: tug:product-spec, tug:step-back, tug:tech-spec, tug:milestone-plan. Stack-agnostic."
+      "name": "tuq",
+      "source": "./plugins/tuq",
+      "description": "Product decisions, tech specs and milestone plans in tuq/: tuq:product-spec, tuq:step-back, tuq:tech-spec, tuq:milestone-plan. Stack-agnostic."
     },
     {
       "name": "browser-validate",

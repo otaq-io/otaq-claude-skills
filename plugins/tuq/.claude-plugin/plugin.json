@@ -1,0 +1,5 @@
+{
+  "name": "tuq",
+  "description": "Product decisions, tech specs and milestone plans kept in tuq/ at the repository root. Puts the tuq and tuq-plan commands on PATH.",
+  "author": { "name": "Nevzat Topcu" }
+}

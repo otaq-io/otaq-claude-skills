@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# tug — the mechanical part of tug/. Shipped in the tug plugin's bin/, so it is on the Bash tool's PATH.
-#   rules    print the rules of the tug/ folder (rules.md at the plugin root); every tug skill reads them first
+# tuq — the mechanical part of tuq/. Shipped in the tuq plugin's bin/, so it is on the Bash tool's PATH.
+#   rules    print the rules of the tuq/ folder (rules.md at the plugin root); every tuq skill reads them first
 #   template <decision|readme|tech-spec|plan|orchestrator>   print a template
-#   init     create tug/README.md (+ decisions/) from the template when missing; print the repo root
+#   init     create tuq/README.md (+ decisions/) from the template when missing; print the repo root
 #   next     print the next free decision number (001, 002, ... 999, 1000)
-#   index    rebuild the decision index in tug/README.md from the decision files
+#   index    rebuild the decision index in tuq/README.md from the decision files
 #   clashes  print numbers used by more than one decision file; exit 1 if any
 # Run from anywhere inside the repository. No dependencies beyond bash 3.2, git and awk.
 set -euo pipefail
 
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-START='<!-- tug:index:start -->'
-END='<!-- tug:index:end -->'
+START='<!-- tuq:index:start -->'
+END='<!-- tuq:index:end -->'
 
 TMP_ROWS=""
 trap '[ -z "$TMP_ROWS" ] || rm -f "$TMP_ROWS"' EXIT
 
-die() { echo "tug: $*" >&2; exit 2; }
+die() { echo "tuq: $*" >&2; exit 2; }
 
 root() {
   git rev-parse --show-toplevel 2>/dev/null || pwd
@@ -24,7 +24,7 @@ root() {
 
 # Decision files, one per line, sorted by number (numeric, so 1000 follows 999).
 decision_files() {
-  local dir="$1/tug/decisions"
+  local dir="$1/tuq/decisions"
   [ -d "$dir" ] || return 0
   find "$dir" -maxdepth 1 -type f -name '[0-9][0-9][0-9]*-*.md' -print |
     awk -F/ '{ f = $NF; n = f; sub(/-.*/, "", n); if (n ~ /^[0-9]+$/) print (n + 0) "\t" $0 }' |
@@ -34,12 +34,12 @@ decision_files() {
 cmd_init() {
   local r; r="$(root)"
   if ! git -C "$r" rev-parse --show-toplevel >/dev/null 2>&1; then
-    echo "tug: not in a git repository; using the current directory" >&2
+    echo "tuq: not in a git repository; using the current directory" >&2
   fi
-  mkdir -p "$r/tug/decisions"
-  if [ ! -e "$r/tug/README.md" ]; then
-    cp "$PLUGIN_DIR/templates/README.md" "$r/tug/README.md"
-    echo "tug: created tug/README.md" >&2
+  mkdir -p "$r/tuq/decisions"
+  if [ ! -e "$r/tuq/README.md" ]; then
+    cp "$PLUGIN_DIR/templates/README.md" "$r/tuq/README.md"
+    echo "tuq: created tuq/README.md" >&2
   fi
   echo "$r"
 }
@@ -60,7 +60,7 @@ cmd_clashes() {
   local r out
   r="$(root)"
   out="$(decision_files "$r" | awk -F/ '
-    { f = $NF; n = f; sub(/-.*/, "", n); n = n + 0; files[n] = files[n] "  tug/decisions/" f "\n"; count[n]++ }
+    { f = $NF; n = f; sub(/-.*/, "", n); n = n + 0; files[n] = files[n] "  tuq/decisions/" f "\n"; count[n]++ }
     END { for (n in count) if (count[n] > 1) printf "%03d\n%s", n, files[n] }')"
   if [ -n "$out" ]; then
     echo "$out"
@@ -71,10 +71,10 @@ cmd_clashes() {
 cmd_index() {
   local r readme rows f
   r="$(root)"
-  readme="$r/tug/README.md"
-  [ -f "$readme" ] || die "no tug/README.md (run: tug init)"
-  grep -qxF "$START" "$readme" || die "tug/README.md has no '$START' marker"
-  grep -qxF "$END" "$readme" || die "tug/README.md has no '$END' marker"
+  readme="$r/tuq/README.md"
+  [ -f "$readme" ] || die "no tuq/README.md (run: tuq init)"
+  grep -qxF "$START" "$readme" || die "tuq/README.md has no '$START' marker"
+  grep -qxF "$END" "$readme" || die "tuq/README.md has no '$END' marker"
 
   rows="$(mktemp)"; TMP_ROWS="$rows"
   while IFS= read -r f; do
@@ -94,7 +94,7 @@ cmd_index() {
         if (title == "")   missing = missing " title line (# NNN · title)"
         if (status == "")  missing = missing " **Status:** line"
         if (summary == "") missing = missing " ## Summary paragraph"
-        if (missing != "") { print "tug: tug/decisions/" file " lacks:" missing > "/dev/stderr"; exit 1 }
+        if (missing != "") { print "tuq: tuq/decisions/" file " lacks:" missing > "/dev/stderr"; exit 1 }
         n = file; sub(/-.*/, "", n)
         printf "%s\t[%s](decisions/%s)\t%s\t%s\n", n, esc(title), file, esc(status), esc(summary)
       }' "$f" >>"$rows" || exit 1
@@ -124,7 +124,7 @@ cmd_index() {
     $0 == end { skip = 0 }
     !skip { print }' "$readme" >"$readme.tmp"
   mv "$readme.tmp" "$readme"
-  echo "tug: index rebuilt ($(grep -c . "$rows" || true) decisions)" >&2
+  echo "tuq: index rebuilt ($(grep -c . "$rows" || true) decisions)" >&2
 }
 
 cmd_rules() { cat "$PLUGIN_DIR/rules.md"; }
@@ -137,7 +137,7 @@ cmd_template() {
     tech-spec) f=tech-spec.md ;;
     plan) f=plan.md ;;
     orchestrator) f=orchestrator.md ;;
-    *) die "usage: tug template decision|readme|tech-spec|plan|orchestrator" ;;
+    *) die "usage: tuq template decision|readme|tech-spec|plan|orchestrator" ;;
   esac
   cat "$PLUGIN_DIR/templates/$f"
 }
@@ -149,5 +149,5 @@ case "${1:-}" in
   next) cmd_next ;;
   index) cmd_index ;;
   clashes) cmd_clashes ;;
-  *) echo "usage: tug rules|template <name>|init|next|index|clashes" >&2; exit 2 ;;
+  *) echo "usage: tuq rules|template <name>|init|next|index|clashes" >&2; exit 2 ;;
 esac

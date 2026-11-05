@@ -2,8 +2,8 @@
 
 - **Ticket:** <KEY, or "none" in a plain chat>
 - **Date:** YYYY-MM-DD
-- **Plan:** tug/plans/<feature>.md
-- **Tech spec:** tug/tech-specs/<feature>.md
+- **Plan:** tuq/plans/<feature>.md
+- **Tech spec:** tuq/tech-specs/<feature>.md
 - **Decisions:** NNN, NNN
 
 You are the agent in charge of building <feature>. You don't build the pieces: you start one agent per piece, check
@@ -11,13 +11,13 @@ what it hands back and merge it. Read the plan first; each piece's details there
 
 ## Run order
 
-<!-- tug:order:start -->
+<!-- tuq:order:start -->
 
 Start a piece as soon as every piece it waits for is merged:
 
 - First: 1 <Title>
 
-<!-- tug:order:end -->
+<!-- tuq:order:end -->
 
 ## Running a piece
 

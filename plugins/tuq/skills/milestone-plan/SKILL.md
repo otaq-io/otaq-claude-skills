@@ -2,23 +2,23 @@
 name: milestone-plan
 description: >-
   Split a feature into the smallest pieces that each deliver one behaviour, with what waits for what, and write an
-  orchestrator prompt for the agent that builds them: saves tug/plans/<feature>.md and
-  tug/prompts/<feature>-orchestrator.md from the feature's decisions and tech spec. Runs as the Milestone plan
-  stage of an Otaq ticket (keeping the ticket Plan's Pieces shape), or when the user types /tug:milestone-plan.
+  orchestrator prompt for the agent that builds them: saves tuq/plans/<feature>.md and
+  tuq/prompts/<feature>-orchestrator.md from the feature's decisions and tech spec. Runs as the Milestone plan
+  stage of an Otaq ticket (keeping the ticket Plan's Pieces shape), or when the user types /tuq:milestone-plan.
 argument-hint: "[feature]"
 disable-model-invocation: true
 adapted-from: "Otaq 0.1.0, built-in skill `milestone-plan` (plugin/skills/milestone-plan/SKILL.md)"
 ---
 
-# Turn the specs into a Plan: tug:milestone-plan
+# Turn the specs into a Plan: tuq:milestone-plan
 
 Adapted from Otaq 0.1.0's built-in `milestone-plan` skill: its stage contract is kept; its piece size rule is
-replaced by "a piece is one behaviour" and its docs step by the tug files. When Otaq's skill changes, merge the change here by
+replaced by "a piece is one behaviour" and its docs step by the tuq files. When Otaq's skill changes, merge the change here by
 hand.
 
-**Run `tug rules` and read all of it before you read or write `tug/`.** It holds the folder's layout and rules;
-this skill doesn't repeat them. `tug` and `tug-plan` are commands the tug plugin puts on the Bash tool's PATH
-(`tug-plan new`, `check`, `order`, `body`, `pull`; each takes the `<feature>` name, see step 6); this skill names no file
+**Run `tuq rules` and read all of it before you read or write `tuq/`.** It holds the folder's layout and rules;
+this skill doesn't repeat them. `tuq` and `tuq-plan` are commands the tuq plugin puts on the Bash tool's PATH
+(`tuq-plan new`, `check`, `order`, `body`, `pull`; each takes the `<feature>` name, see step 6); this skill names no file
 paths, so it works the same when Otaq copies only this `SKILL.md` into a ticket's worktree. `command not found` means
 the plugin isn't enabled in this session: stop and say so.
 
@@ -69,8 +69,8 @@ and end your stage. If you end your turn without either, Otaq types a reminder i
 4. **Decide the pieces**: **a piece is one behaviour**, one thing a user (or a caller) can see working
    when it is done ("a student can remove a book from a reading list"). It may touch every layer that behaviour needs
    (data, API, screen) and brings its own tests.
-   - **List the behaviours first.** Read the product decisions about this feature (`tug/decisions/`, indexed in
-     `tug/README.md`) and the tech spec, and write down for yourself every behaviour they ask for, one line each.
+   - **List the behaviours first.** Read the product decisions about this feature (`tuq/decisions/`, indexed in
+     `tuq/README.md`) and the tech spec, and write down for yourself every behaviour they ask for, one line each.
      Then map each behaviour to exactly one piece, so none is dropped or built twice.
    - **Split whenever there is more than one behaviour**, even when they share files. **Never split one behaviour by
      layer** (an API piece and a screen piece for the same behaviour). Shared groundwork that several behaviours need
@@ -88,7 +88,7 @@ and end your stage. If you end your turn without either, Otaq types a reminder i
      nothing, and you plan only what stays on this ticket.
 5. **Write the ticket's Plan** with `otaq update` (see "Writing the Plan"): first the why (how the work is split and
    the order, in a few lines, naming the decisions it follows), then the **Pieces** list in its fixed shape.
-6. **Write the orchestrator prompt** next to the plan, in `tug/prompts/<feature>-orchestrator.md`. `tug-plan new` created it from the template in step 5; fill in only the feature's parts, and never repeat a
+6. **Write the orchestrator prompt** next to the plan, in `tuq/prompts/<feature>-orchestrator.md`. `tuq-plan new` created it from the template in step 5; fill in only the feature's parts, and never repeat a
    piece's details there (the plan holds them):
    - the intro under the header: what the feature is, in a line, and the header's Ticket, Date, Tech spec and
      Decisions lines (the same as the plan's);
@@ -97,10 +97,10 @@ and end your stage. If you end your turn without either, Otaq types a reminder i
      when no piece needs a note;
    - **Bringing it together**: what proves the whole feature works after the last merge, beyond each piece's
      `Check:` line.
-   - Leave "Run order" and "Running a piece" alone: `tug-plan order` writes the run order, and "Running a piece" is
+   - Leave "Run order" and "Running a piece" alone: `tuq-plan order` writes the run order, and "Running a piece" is
      the same for every feature.
 
-   Then run `tug-plan order "$F" && tug-plan check "$F"` again; `check` must pass. Then **commit everything** on the
+   Then run `tuq-plan order "$F" && tuq-plan check "$F"` again; `check` must pass. Then **commit everything** on the
    ticket's branch with the commit skill `prime` names
    (`otaq-commit`, or your agent's own commit skill); when it names none, commit with `git add -A` and
    `git commit -m "SHOP-40: …"`. Nothing may stay uncommitted: `otaq stage next` is refused while files are
@@ -111,7 +111,7 @@ and end your stage. If you end your turn without either, Otaq types a reminder i
 
    ```sh
    otaq stage next --stdin <<'COMMENT'
-   Milestone plan: 4 pieces; tug/plans/wishlist.md, tug/prompts/wishlist-orchestrator.md
+   Milestone plan: 4 pieces; tuq/plans/wishlist.md, tuq/prompts/wishlist-orchestrator.md
    COMMENT
    ```
 
@@ -119,29 +119,29 @@ and end your stage. If you end your turn without either, Otaq types a reminder i
 
 ## Writing the Plan
 
-The plan file `tug/plans/<feature>.md` **owns the pieces**: the text between its plan markers is the ticket's Plan
+The plan file `tuq/plans/<feature>.md` **owns the pieces**: the text between its plan markers is the ticket's Plan
 word for word, and the run order in the prompt is generated from it. Never keep the pieces in step by hand.
 
-**The feature name** (`$F` below) is the tech spec's: `tug/tech-specs/<feature>.md` when it exists. Without one,
+**The feature name** (`$F` below) is the tech spec's: `tuq/tech-specs/<feature>.md` when it exists. Without one,
 use 2–5 kebab-case words from the ticket's title (`reading-list-sharing`). When a plan file's `Ticket` line already
-names this ticket (`grep -l "Ticket:\*\* $OTAQ_TICKET" tug/plans/*.md`), use its name: planning again updates the
-same two files. **No tech spec in `tug/`** (Tech spec ran another skill): read the files Tech spec's comment names
+names this ticket (`grep -l "Ticket:\*\* $OTAQ_TICKET" tuq/plans/*.md`), use its name: planning again updates the
+same two files. **No tech spec in `tuq/`** (Tech spec ran another skill): read the files Tech spec's comment names
 instead, and name that file in the header's `Tech spec` line.
 
 ```sh
 F=wishlist
-tug-plan new "$F"      # creates tug/plans/$F.md and tug/prompts/$F-orchestrator.md when missing
+tuq-plan new "$F"      # creates tuq/plans/$F.md and tuq/prompts/$F-orchestrator.md when missing
 ```
 
 In the plan file, fill the header (Ticket, Date, the Decisions and Tech spec it builds on) and write the Plan between
-`<!-- tug:plan:start -->` and `<!-- tug:plan:end -->`, nothing else there:
+`<!-- tuq:plan:start -->` and `<!-- tuq:plan:end -->`, nothing else there:
 
 ```markdown
-<!-- tug:plan:start -->
+<!-- tuq:plan:start -->
 
 The wishlist is built in four pieces, one behaviour each: the share token first (groundwork the others
 need), then saving and the page side by side, then the share link, which needs both. The agent in charge follows
-tug/prompts/wishlist-orchestrator.md.
+tuq/prompts/wishlist-orchestrator.md.
 
 ## Pieces
 
@@ -159,15 +159,15 @@ tug/prompts/wishlist-orchestrator.md.
    The Share button on /wishlist and the read-only shared view, without the owner's email (decisions/0140).
    Check: the copied link opens the list signed out, with no email on the page.
 
-<!-- tug:plan:end -->
+<!-- tuq:plan:end -->
 ```
 
 Then generate the run order, check the pair, and pass the Plan to Otaq. `otaq update` replaces the whole Plan; `body`
 writes it to a temporary file outside the worktree:
 
 ```sh
-tug-plan order "$F" && tug-plan check "$F"
-plan="$(mktemp)"; tug-plan body "$F" > "$plan"
+tuq-plan order "$F" && tuq-plan check "$F"
+plan="$(mktemp)"; tuq-plan body "$F" > "$plan"
 otaq update SHOP-40 --plan-file "$plan"
 ```
 
@@ -188,12 +188,12 @@ Every version of the ticket's Plan stays in its History, and every version of th
 ## In a plain chat
 
 With no `$OTAQ_TICKET`, there is no ticket, no stage and nothing to hold a question. This skill only runs here when
-the user typed `/tug:milestone-plan`. Follow steps 3-6 above, with these changes, and skip everything that
+the user typed `/tuq:milestone-plan`. Follow steps 3-6 above, with these changes, and skip everything that
 names `otaq`:
 
 - **Context instead of steps 1-3:** the user's request (the skill's argument names the feature), `CLAUDE.md` and the
-  project's notes, `tug/README.md`, the decisions about this feature, its tech spec in
-  `tug/tech-specs/<feature>.md`, and the code the work touches (read it, don't change it). The repository root is
+  project's notes, `tuq/README.md`, the decisions about this feature, its tech spec in
+  `tuq/tech-specs/<feature>.md`, and the code the work touches (read it, don't change it). The repository root is
   `git rev-parse --show-toplevel`; outside a git repository use the current directory and say so.
 - **Ask with the AskUserQuestion tool**, one question per call, then wait for the answer, mapped from "Asking": each
   `--option` is an option `label` (at most 40 characters), its `--note` the option's `description`, the recommended
@@ -203,9 +203,9 @@ names `otaq`:
   worth building and merging on its own, ask once whether to plan them as several features; on a yes, each gets its
   own pair of files, under its own feature name.
 - **Write the two files as steps 5 and 6 say, but no ticket Plan**: skip `body` and `otaq update`, and write
-  `none` in the header's Ticket lines. `tug-plan check "$F"` must still pass. **Never commit, stage or push**: the
+  `none` in the header's Ticket lines. `tuq-plan check "$F"` must still pass. **Never commit, stage or push**: the
   user commits when they choose.
-- **End** by naming the two files (`tug/plans/<feature>.md`, `tug/prompts/<feature>-orchestrator.md`) and the
+- **End** by naming the two files (`tuq/plans/<feature>.md`, `tuq/prompts/<feature>-orchestrator.md`) and the
   number of pieces, and say that the orchestrator prompt is what to run next: hand it to the session that will build
   the feature.
 
@@ -223,12 +223,12 @@ comment. Run `otaq prime`." Either way:
    comments say what they changed.
 2. **Start from the Plan as `prime` shows it now**, not from the one you wrote: the user may have edited it at Spec
    review. **Keep the user's edits** (a renamed piece, a moved wait, a piece they added or removed) unless their
-   comment says otherwise. `tug-plan pull "$F"` puts the ticket's current Plan between the plan file's markers;
+   comment says otherwise. `tuq-plan pull "$F"` puts the ticket's current Plan between the plan file's markers;
    nothing else in the file changes.
 3. **Change only what the comment asks**, or what the specs' changes make wrong, in the plan file (and the prompt's
-   notes when a piece they name changed), then run `tug-plan order "$F" && tug-plan check "$F"`. When `check` names a
+   notes when a piece they name changed), then run `tuq-plan order "$F" && tuq-plan check "$F"`. When `check` names a
    line the user's edit broke (a hyphen for the em dash, a missing `Check:`), fix its shape and keep their content.
-   Then write the whole Plan again with `tug-plan body "$F" > "$plan"` and
+   Then write the whole Plan again with `tuq-plan body "$F" > "$plan"` and
    `otaq update SHOP-40 --plan-file "$plan"`, commit, and run
    `otaq stage next --stdin` again with a comment saying what changed ("Milestone plan: merged pieces 2 and 3 as you
    asked; kept your rename of piece 4").
@@ -268,6 +268,6 @@ Agent instructions take precedence over this guidance.
 - **Never push, never open a PR, never merge.** Commit on the ticket's branch only.
 - **Long text always goes through stdin** (`--stdin`) or a file, never quoted arguments. Long command output goes to
   a file.
-- The plan file owns the pieces: the ticket's Plan comes from `tug-plan body`, the run order from `tug-plan order`,
-  and `tug-plan check` passes before you commit.
+- The plan file owns the pieces: the ticket's Plan comes from `tuq-plan body`, the run order from `tuq-plan order`,
+  and `tuq-plan check` passes before you commit.
 - In an Otaq stage, always finish with `otaq stage next --stdin`. In a plain chat, never commit.

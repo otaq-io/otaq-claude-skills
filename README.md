@@ -4,10 +4,10 @@ A Claude Code plugin marketplace with two plugins.
 
 | Plugin             | Skills                                                             | Enable it                                   |
 | ------------------ | ------------------------------------------------------------------ | ------------------------------------------- |
-| `tug`           | `tug:product-spec`, `tug:step-back`, `tug:tech-spec`, `tug:milestone-plan` | any repo, any stack (user or project scope) |
+| `tuq`           | `tuq:product-spec`, `tuq:step-back`, `tuq:tech-spec`, `tuq:milestone-plan` | any repo, any stack (user or project scope) |
 | `browser-validate` | `validate-in-browser` (+ the `browser-watch` MCP server)           | front-end repos only (project scope)        |
 
-Each plugin puts its helper commands on the Bash tool's PATH while it is enabled (`tug`, `tug-plan`; `vib-browser`,
+Each plugin puts its helper commands on the Bash tool's PATH while it is enabled (`tuq`, `tuq-plan`; `vib-browser`,
 `vib-paths`), so no skill names a file path. That keeps a skill working when Otaq copies only its `SKILL.md` into a
 ticket's worktree.
 
@@ -19,7 +19,7 @@ file (for example ski-web's `.claude/skills/ski-validate-in-browser/`), which ha
 
 ```sh
 claude plugin marketplace add https://github.com/otaq-io/otaq-claude-skills.git       # or a local checkout: claude plugin marketplace add ./otaq-claude-skills
-claude plugin install tug@otaq-claude-skills --scope user
+claude plugin install tuq@otaq-claude-skills --scope user
 claude plugin install browser-validate@otaq-claude-skills --scope project   # inside a front-end repo
 ```
 
@@ -34,7 +34,7 @@ A repo can offer the marketplace to its team from its committed `.claude/setting
     }
   },
   "enabledPlugins": {
-    "tug@otaq-claude-skills": true,
+    "tuq@otaq-claude-skills": true,
     "browser-validate@otaq-claude-skills": true
   }
 }
@@ -49,4 +49,4 @@ Add the marketplace from your local checkout (`claude plugin marketplace add <pa
 edit takes effect at the next session or after `/reload-plugins`. The plugins carry no `version`, so every commit is a
 new version for git installs.
 
-`browser-validate` needs macOS Google Chrome and `playwright-cli`; `tug-plan pull` needs `python3` and `otaq`.
+`browser-validate` needs macOS Google Chrome and `playwright-cli`; `tuq-plan pull` needs `python3` and `otaq`.
