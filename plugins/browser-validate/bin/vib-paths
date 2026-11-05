@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# browser-validate: print where this ticket's browser lives, as shell exports.
+#   eval "$(vib-paths)"    sets BROWSER_DIR and PROFILE (rules in scripts/paths.sh)
+set -euo pipefail
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/scripts/paths.sh"
+printf 'export BROWSER_DIR=%q PROFILE=%q\n' "$BROWSER_DIR" "$PROFILE"

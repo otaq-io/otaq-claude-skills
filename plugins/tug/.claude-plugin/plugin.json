@@ -1,0 +1,5 @@
+{
+  "name": "tug",
+  "description": "Product decisions, tech specs and milestone plans kept in tug/ at the repository root. Puts the tug and tug-plan commands on PATH.",
+  "author": { "name": "Nevzat Topcu" }
+}

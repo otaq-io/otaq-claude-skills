@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "browser-watch": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/devtools-mcp.sh"
+    }
+  }
+}

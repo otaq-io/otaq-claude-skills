@@ -1,0 +1,5 @@
+{
+  "name": "browser-validate",
+  "description": "Validate a front-end change in a real Chrome. The project's own skill supplies a project file (apps, login, pages, noise). Puts vib-browser and vib-paths on PATH and ships the browser-watch MCP server.",
+  "author": { "name": "Nevzat Topcu" }
+}

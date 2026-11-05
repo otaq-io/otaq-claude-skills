@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# browser-validate: one Chrome per ticket. Same arguments as scripts/browser.sh (start | attach <session> | stop | port).
+exec "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/scripts/browser.sh" "$@"

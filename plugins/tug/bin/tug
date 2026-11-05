@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+# tug — the mechanical part of tug/. Shipped in the tug plugin's bin/, so it is on the Bash tool's PATH.
+#   rules    print the rules of the tug/ folder (rules.md at the plugin root); every tug skill reads them first
+#   template <decision|readme|tech-spec|plan|orchestrator>   print a template
+#   init     create tug/README.md (+ decisions/) from the template when missing; print the repo root
+#   next     print the next free decision number (001, 002, ... 999, 1000)
+#   index    rebuild the decision index in tug/README.md from the decision files
+#   clashes  print numbers used by more than one decision file; exit 1 if any
+# Run from anywhere inside the repository. No dependencies beyond bash 3.2, git and awk.
+set -euo pipefail
+
+PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+START='<!-- tug:index:start -->'
+END='<!-- tug:index:end -->'
+
+TMP_ROWS=""
+trap '[ -z "$TMP_ROWS" ] || rm -f "$TMP_ROWS"' EXIT
+
+die() { echo "tug: $*" >&2; exit 2; }
+
+root() {
+  git rev-parse --show-toplevel 2>/dev/null || pwd
+}
+
+# Decision files, one per line, sorted by number (numeric, so 1000 follows 999).
+decision_files() {
+  local dir="$1/tug/decisions"
+  [ -d "$dir" ] || return 0
+  find "$dir" -maxdepth 1 -type f -name '[0-9][0-9][0-9]*-*.md' -print |
+    awk -F/ '{ f = $NF; n = f; sub(/-.*/, "", n); if (n ~ /^[0-9]+$/) print (n + 0) "\t" $0 }' |
+    sort -n -k1,1 -k2,2 | cut -f2-
+}
+
+cmd_init() {
+  local r; r="$(root)"
+  if ! git -C "$r" rev-parse --show-toplevel >/dev/null 2>&1; then
+    echo "tug: not in a git repository; using the current directory" >&2
+  fi
+  mkdir -p "$r/tug/decisions"
+  if [ ! -e "$r/tug/README.md" ]; then
+    cp "$PLUGIN_DIR/templates/README.md" "$r/tug/README.md"
+    echo "tug: created tug/README.md" >&2
+  fi
+  echo "$r"
+}
+
+cmd_next() {
+  local r max=0 f n
+  r="$(root)"
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    n="${f##*/}"; n="${n%%-*}"
+    n=$((10#$n))
+    [ "$n" -gt "$max" ] && max=$n
+  done < <(decision_files "$r")
+  printf '%03d\n' $((max + 1))
+}
+
+cmd_clashes() {
+  local r out
+  r="$(root)"
+  out="$(decision_files "$r" | awk -F/ '
+    { f = $NF; n = f; sub(/-.*/, "", n); n = n + 0; files[n] = files[n] "  tug/decisions/" f "\n"; count[n]++ }
+    END { for (n in count) if (count[n] > 1) printf "%03d\n%s", n, files[n] }')"
+  if [ -n "$out" ]; then
+    echo "$out"
+    return 1
+  fi
+}
+
+cmd_index() {
+  local r readme rows f
+  r="$(root)"
+  readme="$r/tug/README.md"
+  [ -f "$readme" ] || die "no tug/README.md (run: tug init)"
+  grep -qxF "$START" "$readme" || die "tug/README.md has no '$START' marker"
+  grep -qxF "$END" "$readme" || die "tug/README.md has no '$END' marker"
+
+  rows="$(mktemp)"; TMP_ROWS="$rows"
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    LC_ALL=C awk -v file="${f##*/}" '
+      function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
+      function esc(s) { gsub(/\|/, "\\|", s); return s }
+      !title && /^# [0-9]+ · / { t = $0; sub(/^# [0-9]+ · /, "", t); title = trim(t) }
+      !status && /^[-*] \*\*Status:\*\*/ { s = $0; sub(/^[-*] \*\*Status:\*\*/, "", s); status = trim(s) }
+      /^## / { insum = ($0 ~ /^## Summary[ \t]*$/); if (insum) seen = 1; next }
+      insum {
+        if ($0 ~ /^[ \t]*$/) { if (summary != "") insum = 0; next }
+        summary = summary (summary == "" ? "" : " ") trim($0)
+      }
+      END {
+        missing = ""
+        if (title == "")   missing = missing " title line (# NNN · title)"
+        if (status == "")  missing = missing " **Status:** line"
+        if (summary == "") missing = missing " ## Summary paragraph"
+        if (missing != "") { print "tug: tug/decisions/" file " lacks:" missing > "/dev/stderr"; exit 1 }
+        n = file; sub(/-.*/, "", n)
+        printf "%s\t[%s](decisions/%s)\t%s\t%s\n", n, esc(title), file, esc(status), esc(summary)
+      }' "$f" >>"$rows" || exit 1
+  done < <(decision_files "$r")
+
+  # Render the table with columns padded to their display width (as prettier does), then splice it in.
+  LC_ALL=C awk -F'\t' -v start="$START" -v end="$END" -v rowsfile="$rows" '
+    function w(s,   t) { t = s; gsub(/[\200-\277]/, "", t); return length(t) }
+    function pad(s, n,   k) { k = n - w(s); while (k-- > 0) s = s " "; return s }
+    function dash(n,   s) { s = ""; while (n-- > 0) s = s "-"; return s }
+    BEGIN {
+      h[1] = "#"; h[2] = "Decision"; h[3] = "Status"; h[4] = "Summary"
+      for (c = 1; c <= 4; c++) { width[c] = w(h[c]); if (width[c] < 3) width[c] = 3 }
+      nrows = 0
+      while ((getline line < rowsfile) > 0) {
+        nrows++; split(line, cell, "\t")
+        for (c = 1; c <= 4; c++) { v[nrows, c] = cell[c]; if (w(cell[c]) > width[c]) width[c] = w(cell[c]) }
+      }
+      table = "|"; for (c = 1; c <= 4; c++) table = table " " pad(h[c], width[c]) " |"
+      table = table "\n|"; for (c = 1; c <= 4; c++) table = table " " dash(width[c]) " |"
+      for (i = 1; i <= nrows; i++) {
+        table = table "\n|"; for (c = 1; c <= 4; c++) table = table " " pad(v[i, c], width[c]) " |"
+      }
+      if (nrows == 0) table = table "\n| | _No decisions yet._ | | |"
+    }
+    $0 == start { print; print ""; print table; print ""; skip = 1; next }
+    $0 == end { skip = 0 }
+    !skip { print }' "$readme" >"$readme.tmp"
+  mv "$readme.tmp" "$readme"
+  echo "tug: index rebuilt ($(grep -c . "$rows" || true) decisions)" >&2
+}
+
+cmd_rules() { cat "$PLUGIN_DIR/rules.md"; }
+
+cmd_template() {
+  local f
+  case "${1:-}" in
+    decision) f=decision.md ;;
+    readme) f=README.md ;;
+    tech-spec) f=tech-spec.md ;;
+    plan) f=plan.md ;;
+    orchestrator) f=orchestrator.md ;;
+    *) die "usage: tug template decision|readme|tech-spec|plan|orchestrator" ;;
+  esac
+  cat "$PLUGIN_DIR/templates/$f"
+}
+
+case "${1:-}" in
+  rules) cmd_rules ;;
+  template) shift; cmd_template "$@" ;;
+  init) cmd_init ;;
+  next) cmd_next ;;
+  index) cmd_index ;;
+  clashes) cmd_clashes ;;
+  *) echo "usage: tug rules|template <name>|init|next|index|clashes" >&2; exit 2 ;;
+esac

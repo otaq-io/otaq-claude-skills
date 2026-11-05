@@ -1,0 +1,306 @@
+#!/usr/bin/env bash
+# tug-plan — the mechanical part of tug:milestone-plan (tug plugin, bin/ on PATH; rules: skills/milestone-plan/SKILL.md).
+#   new   <feature>  create tug/plans/<feature>.md and tug/prompts/<feature>-orchestrator.md from the
+#                    templates when missing (existing files are left untouched); print both paths
+#   check <feature>  validate the Pieces shape, the links and the run order; exit 1 naming file and line
+#   order <feature>  rewrite the run order block in the prompt from the plan's Pieces
+#   body  <feature>  print the ticket Plan text (between the plan markers) for `otaq update --plan-file`
+#   pull  <feature>  stage mode: replace that text with the ticket's current Plan ($OTAQ_TICKET; needs python3)
+# Run from anywhere inside the repository. No dependencies beyond bash 3.2, git and awk (pull: python3).
+set -euo pipefail
+
+PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+die() { echo "tug-plan: $*" >&2; exit 2; }
+
+root() {
+  git rev-parse --show-toplevel 2>/dev/null || pwd
+}
+
+# The feature name: kebab-case words, as in tug/tech-specs/<feature>.md.
+feature_arg() {
+  local f="${1:-}"
+  [ -n "$f" ] || die "missing <feature> (usage: tug-plan $2 <feature>)"
+  printf '%s\n' "$f" | grep -qE '^[a-z0-9]+(-[a-z0-9]+)*$' || die "feature '$f' is not kebab-case (e.g. reading-list-sharing)"
+  echo "$f"
+}
+
+plan_rel() { echo "tug/plans/$1.md"; }
+prompt_rel() { echo "tug/prompts/$1-orchestrator.md"; }
+
+# Copy a template to a new file, with <feature> and the date filled in. Never overwrites.
+from_template() {
+  local tpl="$1" dest="$2" feature="$3" today="$4"
+  [ -f "$tpl" ] || die "template missing: $tpl"
+  mkdir -p "$(dirname "$dest")"
+  awk -v feature="$feature" -v today="$today" '
+    { gsub(/<feature>/, feature); gsub(/YYYY-MM-DD/, today); print }' "$tpl" >"$dest.tmp"
+  mv "$dest.tmp" "$dest"
+}
+
+cmd_new() {
+  local feature r today rel
+  feature="$(feature_arg "${1:-}" new)"
+  r="$(root)"
+  if ! git -C "$r" rev-parse --show-toplevel >/dev/null 2>&1; then
+    echo "tug-plan: not in a git repository; using the current directory" >&2
+  fi
+  today="$(date +%Y-%m-%d)"
+  rel="$(plan_rel "$feature")"
+  if [ -e "$r/$rel" ]; then
+    echo "tug-plan: $rel exists; left untouched" >&2
+  else
+    from_template "$PLUGIN_DIR/templates/plan.md" "$r/$rel" "$feature" "$today"
+    echo "tug-plan: created $rel" >&2
+  fi
+  echo "$r/$rel"
+  rel="$(prompt_rel "$feature")"
+  if [ -e "$r/$rel" ]; then
+    echo "tug-plan: $rel exists; left untouched" >&2
+  else
+    from_template "$PLUGIN_DIR/templates/orchestrator.md" "$r/$rel" "$feature" "$today"
+    echo "tug-plan: created $rel" >&2
+  fi
+  echo "$r/$rel"
+}
+
+# ---------------------------------------------------------------------------------------------------------------
+# Parsing the plan. One awk pass over the plan file prints one record per line, tab-separated:
+#   P <n> <title> <waits>     a piece: its number, its title, the numbers it waits for (space-separated, or empty)
+#   E <line> <message>        a shape error (line 0: the file as a whole)
+# The shape is Otaq's ticket Plan Pieces list (the built-in milestone-plan contract) plus a Check: line per piece.
+PARSE_AWK='
+function err(l, m) { printf "E\t%d\t%s\n", l, m }
+function close_piece() {
+  if (!cur) return
+  if (!details) err(cur_line, "piece " cur " has no indented details under its title")
+  else if (!hascheck) err(cur_line, "piece " cur " has no \"Check:\" line in its details")
+  cur = 0
+}
+function start_piece(   n, rest, at, title, waits, k, parts, i, w) {
+  close_piece()
+  np++
+  n = $0; sub(/\..*$/, "", n); n = n + 0
+  if (n != np) err(NR, "piece numbered " n ", expected " np " (pieces are numbered 1, 2, 3 in order)")
+  cur = n; cur_line = NR; details = 0; hascheck = 0
+  rest = $0; sub(/^[0-9]+\.[ ]*/, "", rest)
+  at = index(rest, " \342\200\224 waits for ")
+  if (at == 0) {
+    if (rest ~ / (-|--|\342\200\223) waits for /) err(NR, "use an em dash (\342\200\224) before \"waits for\", not a hyphen or en dash")
+    else err(NR, "title line must read \"" n ". Title \342\200\224 waits for nothing\" or \"\342\200\224 waits for 1, 2\"")
+    printf "P\t%d\t%s\t\n", n, rest
+    return
+  }
+  title = substr(rest, 1, at - 1)
+  waits = substr(rest, at + length(" \342\200\224 waits for "))
+  if ($0 !~ /^[0-9]+\. [^ ]/ || title == "") err(NR, "title line must read \"" n ". Title \342\200\224 waits for ...\"")
+  if (waits == "nothing") { printf "P\t%d\t%s\t\n", n, title; return }
+  if (waits !~ /^[0-9]+(, [0-9]+)*$/) {
+    err(NR, "\"waits for\" must be \"nothing\" or piece numbers like \"1, 2\", got \"" waits "\"")
+    printf "P\t%d\t%s\t\n", n, title
+    return
+  }
+  k = split(waits, parts, /, /); w = ""
+  for (i = 1; i <= k; i++) {
+    if (parts[i] + 0 < 1 || parts[i] + 0 >= n) err(NR, "piece " n " waits for " parts[i] ": a piece waits only for pieces before it")
+    else w = w (w == "" ? "" : " ") (parts[i] + 0)
+  }
+  printf "P\t%d\t%s\t%s\n", n, title, w
+}
+/^<!-- tug:plan:start -->[ \t]*$/ { start = NR; inm = 1; next }
+/^<!-- tug:plan:end -->[ \t]*$/   { stop = NR; if (inm) close_piece(); inm = 0; next }
+!inm { next }
+!inp {
+  if ($0 ~ /^## Pieces[ \t]*$/) { inp = NR; next }
+  why = why "\n" $0
+  next
+}
+/^#/ { err(NR, "a heading after \"## Pieces\": the Pieces list must come last in the ticket Plan"); next }
+/^[ \t]*$/ { next }
+/^[0-9]+\./ { start_piece(); next }
+/^[ \t]/ {
+  if (!cur) { err(NR, "indented text with no piece title above it"); next }
+  details++
+  if ($0 ~ /^[ \t]+Check:/) hascheck = 1
+  next
+}
+{ err(NR, "neither a piece title (\"N. Title \342\200\224 waits for ...\") nor details indented under one") }
+END {
+  if (!start) err(0, "missing <!-- tug:plan:start -->")
+  if (!stop) err(0, "missing <!-- tug:plan:end -->")
+  if (start && stop && stop < start) err(stop, "<!-- tug:plan:end --> comes before the start marker")
+  if (start && !inp) err(start, "no \"## Pieces\" heading between the plan markers")
+  if (start && inp && np == 0) err(inp, "no pieces under \"## Pieces\"")
+  if (start && prompt != "" && index(why, prompt) == 0) err(start, "the why (before \"## Pieces\") must name the orchestrator prompt " prompt)
+}'
+
+# The run order block, from the P records on stdin: a piece's step is one more than the latest step of what it waits
+# for; each step is one line naming what it comes after (the waits of its pieces).
+ORDER_AWK='
+BEGIN { FS = "\t" }
+$1 == "P" { n = $2 + 0; title[n] = $3; waits[n] = $4; if (n > max) max = n }
+END {
+  print ""
+  print "Start a piece as soon as every piece it waits for is merged:"
+  print ""
+  last = 0
+  for (n = 1; n <= max; n++) {
+    s = 1
+    k = split(waits[n], w, " ")
+    for (i = 1; i <= k; i++) if (step[w[i]] + 1 > s) s = step[w[i]] + 1
+    step[n] = s
+    if (s > last) last = s
+  }
+  for (s = 1; s <= last; s++) {
+    list = ""; count = 0
+    delete after
+    for (n = 1; n <= max; n++) {
+      if (step[n] != s) continue
+      list = list (count ? ", " : "") n " " title[n]; count++
+      k = split(waits[n], w, " ")
+      for (i = 1; i <= k; i++) after[w[i] + 0] = 1
+    }
+    if (!count) continue
+    if (s == 1) line = "- First: " list
+    else {
+      a = ""
+      for (n = 1; n <= max; n++) if (n in after) a = a (a == "" ? "" : ", ") n
+      line = "- After " a ": " list
+    }
+    if (count > 1) line = line " (side by side)"
+    print line
+  }
+  print ""
+}'
+
+# Print the lines strictly between two marker lines of a file.
+between() {
+  awk -v a="$2" -v b="$3" '$0 == a { on = 1; next } $0 == b { on = 0; exit } on' "$1"
+}
+
+# Replace the lines strictly between two marker lines with the content of a file; everything else stays byte for byte.
+replace_between() {
+  local file="$1" a="$2" b="$3" content="$4"
+  awk -v a="$2" -v b="$3" -v content="$content" '
+    $0 == a { print; while ((getline l < content) > 0) print l; skip = 1; next }
+    $0 == b { skip = 0 }
+    !skip' "$file" >"$file.tmp"
+  mv "$file.tmp" "$file"
+}
+
+has_line() { grep -qxF "$2" "$1"; }
+
+PLAN_START='<!-- tug:plan:start -->'
+PLAN_END='<!-- tug:plan:end -->'
+ORDER_START='<!-- tug:order:start -->'
+ORDER_END='<!-- tug:order:end -->'
+
+# Setup shared by every command but new: the feature, the repo root, both paths; the plan must exist.
+load() {
+  FEATURE="$(feature_arg "${1:-}" "$2")"
+  R="$(root)"
+  PLAN_REL="$(plan_rel "$FEATURE")"
+  PROMPT_REL="$(prompt_rel "$FEATURE")"
+  PLAN="$R/$PLAN_REL"
+  PROMPT="$R/$PROMPT_REL"
+  [ -f "$PLAN" ] || die "$PLAN_REL not found (create it with: tug-plan new $FEATURE)"
+}
+
+parse_plan() { awk -v prompt="$PROMPT_REL" "$PARSE_AWK" "$PLAN"; }
+
+cmd_order() {
+  load "${1:-}" order
+  [ -f "$PROMPT" ] || die "$PROMPT_REL not found (create it with: tug-plan new $FEATURE)"
+  has_line "$PROMPT" "$ORDER_START" && has_line "$PROMPT" "$ORDER_END" ||
+    die "$PROMPT_REL has no run order markers ($ORDER_START ... $ORDER_END)"
+  local records tmp
+  records="$(parse_plan)"
+  if printf '%s\n' "$records" | grep -q '^E'; then
+    printf '%s\n' "$records" | awk -F'\t' -v f="$PLAN_REL" '$1 == "E" { print ($2 ? f ":" $2 : f) ": " $3 }' >&2
+    die "fix the plan first; the run order was not written"
+  fi
+  tmp="$(mktemp)"
+  printf '%s\n' "$records" | awk "$ORDER_AWK" >"$tmp"
+  replace_between "$PROMPT" "$ORDER_START" "$ORDER_END" "$tmp"
+  rm -f "$tmp"
+}
+
+cmd_body() {
+  load "${1:-}" body
+  has_line "$PLAN" "$PLAN_START" && has_line "$PLAN" "$PLAN_END" ||
+    die "$PLAN_REL has no plan markers ($PLAN_START ... $PLAN_END)"
+  # The text between the markers, without the blank lines at either end.
+  between "$PLAN" "$PLAN_START" "$PLAN_END" |
+    awk '{ l[NR] = $0 } END { a = 1; while (a <= NR && l[a] ~ /^[ \t]*$/) a++; b = NR; while (b >= a && l[b] ~ /^[ \t]*$/) b--; for (i = a; i <= b; i++) print l[i] }'
+}
+
+cmd_check() {
+  load "${1:-}" check
+  local records errors="" max want have tmp
+  records="$(parse_plan)"
+  errors="$(printf '%s\n' "$records" | awk -F'\t' -v f="$PLAN_REL" '$1 == "E" { print ($2 ? f ":" $2 : f) ": " $3 }')"
+  add() { errors="${errors:+$errors
+}$1"; }
+  if [ ! -f "$PROMPT" ]; then
+    add "$PROMPT_REL: missing (create it with: tug-plan new $FEATURE)"
+  else
+    grep -qF "$PLAN_REL" "$PROMPT" || add "$PROMPT_REL: doesn't link to the plan $PLAN_REL"
+    if has_line "$PROMPT" "$ORDER_START" && has_line "$PROMPT" "$ORDER_END"; then
+      if ! printf '%s\n' "$records" | grep -q '^E'; then
+        tmp="$(mktemp)"
+        printf '%s\n' "$records" | awk "$ORDER_AWK" >"$tmp"
+        want="$(cat "$tmp")"; rm -f "$tmp"
+        have="$(between "$PROMPT" "$ORDER_START" "$ORDER_END")"
+        if [ "$have" != "$want" ]; then
+          add "$PROMPT_REL:$(grep -nxF "$ORDER_START" "$PROMPT" | head -1 | cut -d: -f1): the run order is stale; run: tug-plan order $FEATURE"
+        fi
+      fi
+    else
+      add "$PROMPT_REL: missing run order markers ($ORDER_START ... $ORDER_END)"
+    fi
+    max="$(printf '%s\n' "$records" | awk -F'\t' '$1 == "P" && $2 + 0 > m { m = $2 + 0 } END { print m + 0 }')"
+    while IFS=: read -r line n; do
+      [ -n "$line" ] || continue
+      [ "$n" -ge 1 ] && [ "$n" -le "$max" ] || add "$PROMPT_REL:$line: note for piece $n, but the plan has pieces 1 to $max"
+    done <<EOF
+$(awk '/^### Piece [0-9]+[ \t]*$/ { n = $3; print NR ":" n + 0 }' "$PROMPT")
+EOF
+  fi
+  if [ -n "$errors" ]; then
+    printf '%s\n' "$errors"
+    exit 1
+  fi
+}
+
+cmd_pull() {
+  load "${1:-}" pull
+  [ -n "${OTAQ_TICKET:-}" ] || die "pull needs \$OTAQ_TICKET (stage mode): there is no ticket Plan to pull in a plain chat"
+  command -v python3 >/dev/null 2>&1 ||
+    die "pull needs python3 to read otaq's JSON (on macOS: xcode-select --install)"
+  command -v otaq >/dev/null 2>&1 || die "pull needs the otaq command"
+  has_line "$PLAN" "$PLAN_START" && has_line "$PLAN" "$PLAN_END" ||
+    die "$PLAN_REL has no plan markers ($PLAN_START ... $PLAN_END)"
+  local tmp
+  tmp="$(mktemp)"
+  otaq show "$OTAQ_TICKET" --json | python3 -c '
+import json, sys
+plan = (json.load(sys.stdin).get("ticket") or {}).get("plan") or ""
+plan = plan.strip("\n")
+if not plan.strip():
+    sys.exit("tug-plan: the ticket has no Plan to pull")
+sys.stdout.write("\n" + plan + "\n\n")
+' >"$tmp" || { rm -f "$tmp"; die "could not read the Plan of $OTAQ_TICKET"; }
+  replace_between "$PLAN" "$PLAN_START" "$PLAN_END" "$tmp"
+  rm -f "$tmp"
+}
+
+usage() { echo "usage: tug-plan new|check|order|body|pull <feature>" >&2; exit 2; }
+
+case "${1:-}" in
+  new) shift; cmd_new "$@" ;;
+  order) shift; cmd_order "$@" ;;
+  body) shift; cmd_body "$@" ;;
+  check) shift; cmd_check "$@" ;;
+  pull) shift; cmd_pull "$@" ;;
+  *) usage ;;
+esac
